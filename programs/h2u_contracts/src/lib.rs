@@ -1,9 +1,9 @@
 use anchor_lang::prelude::*;
 
-declare_id!("53CP3kVEC2YnSd3ionqHRNeJ9ZheeBgghogRjPtkcjPr");
+declare_id!("53gF64GULwxev9mEbEL5MGbo6tJjtdtJ4U9mFb2otJQh");
 
 #[program]
-pub mod h2u_contracts {
+pub mod hydrogen {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>) -> Result<()> {

@@ -5,7 +5,7 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-h2u_contracts = "53CP3kVEC2YnSd3ionqHRNeJ9ZheeBgghogRjPtkcjPr"
+hydrogen = "53gF64GULwxev9mEbEL5MGbo6tJjtdtJ4U9mFb2otJQh"
 
 [registry]
 url = "https://api.apr.dev"
@@ -15,4 +15,15 @@ cluster = "Localnet"
 wallet = "/Users/petroyaremenko/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "yarn ts-mocha -p ./tsconfig.json -t 1000000 tests/**/pipeline.test.ts"
+
+[test]
+startup_wait = 5000
+shutdown_wait = 2000
+upgradeable = false
+
+[test.validator]
+bind_address = "0.0.0.0"
+url = "https://api.mainnet-beta.solana.com"
+ledger = ".anchor/test-ledger"
+rpc_port = 8899
