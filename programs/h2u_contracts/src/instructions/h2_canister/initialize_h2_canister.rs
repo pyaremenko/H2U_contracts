@@ -6,7 +6,7 @@ pub fn init_h2_canister(ctx: Context<InitH2Canister>) -> Result<()> {
     let canister = &mut ctx.accounts.h2_canister;
     canister.total_amount = 0;
     canister.available_amount = 0;
-    // canister.producer_pubkey = ctx.accounts.producer.key();
+    canister.producer_pubkey = ctx.accounts.producer.key();
     Ok(())
 }
 

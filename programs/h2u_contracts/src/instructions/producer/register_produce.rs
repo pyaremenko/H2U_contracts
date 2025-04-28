@@ -5,9 +5,21 @@ use crate::{
     state::{eac::eac::EAC, h2_canister::h2_canister::H2Canister, producer::Producer},
 };
 
+const ELECTRICITY_PER_TON_H2: u64 = 60; // 60 kWh to produce 1 ton H2
+
+pub fn register_produceee(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
+    burn_eac(&mut ctx.accounts.eac, burned_kwh)?;
+    // calculate how many tons of H2 to mint
+    let minted_tons = burned_kwh / ELECTRICITY_PER_TON_H2;
+    // mint hydrogen
+    mint_h2(&mut ctx.accounts.h2_canister, minted_tons)?;
+    Ok(())
+}
+
 pub fn register_produce(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
-    // burn_eac(&mut ctx.accounts.eac, burned_kwh)?;
-    // mint_h2(&mut ctx.accounts.h2_canister, burned_kwh)?;
+    burn_eac(&mut ctx.accounts.eac, burned_kwh)?;
+    let minted_tons = burned_kwh / ELECTRICITY_PER_TON_H2;
+    mint_h2(&mut ctx.accounts.h2_canister, minted_tons)?;
     Ok(())
 }
 

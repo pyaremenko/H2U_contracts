@@ -4,5 +4,5 @@ use anchor_lang::prelude::*;
 pub struct H2Canister {
     pub total_amount: u64,
     pub available_amount: u64,
-    pub producer: Pubkey, // Reference to producer
+    pub producer_pubkey: Pubkey, // Reference to producer
 }

@@ -4,7 +4,6 @@ use crate::state::{eac::eac::EAC, producer::Producer};
 
 pub fn init_eac_storage(ctx: Context<InitEacStorage>) -> Result<()> {
     let eac = &mut ctx.accounts.eac;
-    eac.total_amount = 0;
     eac.available_amount = 0;
     eac.producer_pubkey = ctx.accounts.producer.key();
     Ok(())
