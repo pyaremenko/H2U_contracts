@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::state::producer::Producer;
+
 pub fn update_producer(ctx: Context<UpdateProducer>, id: u64, name: String) -> Result<()> {
     let producer = &mut ctx.accounts.producer;
     producer.name = name;

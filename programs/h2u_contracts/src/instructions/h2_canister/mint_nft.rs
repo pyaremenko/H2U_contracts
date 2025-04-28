@@ -1,10 +1,12 @@
 use anchor_lang::prelude::*;
 
+use crate::state::{h2_canister::h2_canister::H2Canister, producer::Producer};
+
 #[derive(Accounts)]
 pub struct MintH2<'info> {
     #[account(mut, seeds = [b"h2_canister", producer.key().as_ref()], bump)]
     pub h2_canister: Account<'info, H2Canister>,
-    
+
     pub producer: Account<'info, Producer>,
 }
 

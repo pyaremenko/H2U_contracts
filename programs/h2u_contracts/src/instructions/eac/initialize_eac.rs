@@ -1,7 +1,17 @@
 use anchor_lang::prelude::*;
 
+use crate::state::{eac::eac::EAC, producer::Producer};
+
+pub fn init_eac_storage(ctx: Context<InitEacStorage>) -> Result<()> {
+    let eac = &mut ctx.accounts.eac;
+    eac.total_amount = 0;
+    eac.available_amount = 0;
+    eac.producer_pubkey = ctx.accounts.producer.key();
+    Ok(())
+}
+
 #[derive(Accounts)]
-pub struct InitEac<'info> {
+pub struct InitEacStorage<'info> {
     #[account(
         init,
         payer = signer,
@@ -15,12 +25,4 @@ pub struct InitEac<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
-}
-
-pub fn init_eac(ctx: Context<InitEac>) -> Result<()> {
-    let eac = &mut ctx.accounts.eac;
-    eac.total_amount = 0;
-    eac.available_amount = 0;
-    eac.producer_pubkey = ctx.accounts.producer.key();
-    Ok(())
 }

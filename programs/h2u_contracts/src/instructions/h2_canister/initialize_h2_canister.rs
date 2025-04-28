@@ -1,5 +1,15 @@
 use anchor_lang::prelude::*;
 
+use crate::state::{h2_canister::h2_canister::H2Canister, producer::Producer};
+
+pub fn init_h2_canister(ctx: Context<InitH2Canister>) -> Result<()> {
+    let canister = &mut ctx.accounts.h2_canister;
+    canister.total_amount = 0;
+    canister.available_amount = 0;
+    // canister.producer_pubkey = ctx.accounts.producer.key();
+    Ok(())
+}
+
 #[derive(Accounts)]
 pub struct InitH2Canister<'info> {
     #[account(
@@ -15,12 +25,4 @@ pub struct InitH2Canister<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
     pub system_program: Program<'info, System>,
-}
-
-pub fn init_h2_canister(ctx: Context<InitH2Canister>) -> Result<()> {
-    let canister = &mut ctx.accounts.h2_canister;
-    canister.total_amount = 0;
-    canister.available_amount = 0;
-    canister.producer_pubkey = ctx.accounts.producer.key();
-    Ok(())
 }
