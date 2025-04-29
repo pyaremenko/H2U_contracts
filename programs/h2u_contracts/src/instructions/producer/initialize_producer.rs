@@ -1,10 +1,14 @@
 use anchor_lang::prelude::*;
 
-use crate::state::producer::Producer;
+use crate::{errors::producer::producer_errors::ErrorCode, state::producer::Producer};
 
 pub fn init_producer(ctx: Context<InitProducer>, id: u64, name: String) -> Result<()> {
     let producer = &mut ctx.accounts.producer;
+    if name.len() > 64 {
+        return Err(ErrorCode::NameTooLong.into());
+    }
     producer.id = id;
+    msg!("Name length: {}", name.len());
     producer.name = name;
     producer.authority = ctx.accounts.authority.key();
     Ok(())
@@ -18,7 +22,7 @@ pub struct InitProducer<'info> {
         seeds = [b"producer", authority.key().as_ref()],
         bump,
         payer = authority,
-        space = 8 + 8 + 4 + name.len() + 32, // 8 = account discriminator
+        space = 8 + 8 + 4 + 64 + 32,
     )]
     pub producer: Account<'info, Producer>,
 

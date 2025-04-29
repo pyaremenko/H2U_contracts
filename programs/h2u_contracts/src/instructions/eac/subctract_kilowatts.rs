@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use crate::{
-    errors::producer::producer_errors::CustomError,
+    errors::eac::CustomError,
     state::{eac::eac::EAC, producer::Producer},
 };
 

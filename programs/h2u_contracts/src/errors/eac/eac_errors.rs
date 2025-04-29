@@ -2,6 +2,8 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum CustomError {
-    #[msg("You are not authorized to update this PDA.")]
-    Unauthorized,
+    #[msg("Not enough available electricity to burn.")]
+    NotEnoughElectricity,
+    #[msg("Burned electricity is not enough to produce any hydrogen.")]
+    NotEnoughToProduceHydrogen,
 }

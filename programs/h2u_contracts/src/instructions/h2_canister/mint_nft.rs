@@ -2,11 +2,11 @@ use anchor_lang::prelude::*;
 
 use crate::state::{h2_canister::h2_canister::H2Canister, producer::Producer};
 
-pub fn mint_h2(h2_canister: &mut Account<H2Canister>, minted_tons: u64) -> Result<()> {
-    h2_canister.total_amount = h2_canister.total_amount.checked_add(minted_tons).unwrap();
+pub fn mint_h2(h2_canister: &mut Account<H2Canister>, minted_grams: u64) -> Result<()> {
+    h2_canister.total_amount = h2_canister.total_amount.checked_add(minted_grams).unwrap();
     h2_canister.available_amount = h2_canister
         .available_amount
-        .checked_add(minted_tons)
+        .checked_add(minted_grams)
         .unwrap();
     Ok(())
 }

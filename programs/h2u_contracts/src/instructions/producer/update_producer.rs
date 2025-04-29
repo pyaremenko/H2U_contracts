@@ -1,23 +1,21 @@
 use anchor_lang::prelude::*;
 
-use crate::state::producer::Producer;
+use crate::{errors::producer::producer_errors::ErrorCode, state::producer::Producer};
 
 pub fn update_producer(ctx: Context<UpdateProducer>, name: String) -> Result<()> {
     let producer = &mut ctx.accounts.producer;
+    msg!("Name length: {}", name.len());
+    if name.len() > 64 {
+        return Err(ErrorCode::NameTooLong.into());
+    }
     producer.name = name;
     Ok(())
 }
 
 #[derive(Accounts)]
-#[instruction(id: u64, name: String)]
+#[instruction(name: String)]
 pub struct UpdateProducer<'info> {
-    #[account(
-        init,
-        seeds = [b"producer", authority.key().as_ref()],
-        bump,
-        payer = authority,
-        space = 8 + 8 + 4 + name.len() + 32, // 8 = account discriminator
-    )]
+    #[account(mut, seeds = [b"producer", authority.key().as_ref()], bump)]
     pub producer: Account<'info, Producer>,
 
     #[account(mut)]
