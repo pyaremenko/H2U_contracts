@@ -39,17 +39,27 @@ pub mod hydrogen {
         init_h2_canister(ctx)
     }
 
-    pub fn burn_eac_certificate(ctx: Context<BurnEac>, burned_kwh: u64) -> Result<()> {
-        burn_eac_with_context(ctx, burned_kwh)
+    // pub fn burn_eac_certificate(ctx: Context<BurnEac>, burned_kwh: u64) -> Result<()> {
+    //     burn_eac(ctx, , burned_kwh)
+    // }
+
+    // pub fn mint_h2_nft(ctx: Context<MintH2>, minted_tons: u64) -> Result<()> {
+    //     mint_h2_context(ctx, minted_tons)
+    // }
+
+    pub fn producer_register_batch(
+        ctx: Context<RegisterProduce>,
+        burned_kwh: u64,
+        token_name: String,
+        token_symbol: String,
+        token_uri: String,
+    ) -> Result<()> {
+        register_produce(ctx, burned_kwh, token_name, token_symbol, token_uri)
     }
 
-    pub fn mint_h2_nft(ctx: Context<MintH2>, minted_tons: u64) -> Result<()> {
-        mint_h2_context(ctx, minted_tons)
-    }
-
-    pub fn producer_register_batch(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
-        register_produce(ctx, burned_kwh)
-    }
+    // pub fn producer_register_batch(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
+    //     register_produce(ctx, burned_kwh)
+    // }
 }
 
 #[derive(Accounts)]

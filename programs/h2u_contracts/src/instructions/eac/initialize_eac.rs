@@ -13,8 +13,9 @@ pub fn init_eac_storage(ctx: Context<InitEacStorage>) -> Result<()> {
         CustomError::Unauthorized
     );
     let eac = &mut ctx.accounts.eac;
-    eac.burned_amount = 0;
-    eac.available_amount = 0;
+    eac.burned_kwts = 0;
+    eac.available_kwts = 0;
+    eac.available_hydrogen = 0;
     eac.producer_pubkey = ctx.accounts.producer.authority;
     Ok(())
 }

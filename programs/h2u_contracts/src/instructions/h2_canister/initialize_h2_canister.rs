@@ -15,8 +15,9 @@ pub fn init_h2_canister(ctx: Context<InitH2Canister>) -> Result<()> {
     );
     let canister = &mut ctx.accounts.h2_canister;
     canister.total_amount = 0;
-    canister.available_amount = 0;
+    canister.available_hydrogen = 0;
     canister.producer_pubkey = ctx.accounts.producer.authority;
+    canister.token_mint = Pubkey::default();
     Ok(())
 }
 
@@ -27,7 +28,7 @@ pub struct InitH2Canister<'info> {
         payer = signer,
         seeds = [b"h2_canister", producer.authority.as_ref()],
         bump,
-        space = 8 + 32 + 8 + 8
+        space = 8 + 32 + 8 + 8 + 32
     )]
     pub h2_canister: Account<'info, H2Canister>,
     pub producer: Account<'info, Producer>,
