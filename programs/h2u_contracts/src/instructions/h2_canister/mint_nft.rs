@@ -11,19 +11,18 @@ use anchor_spl::{
 
 pub fn mint_h2<'info>(
     h2_canister: &mut Account<'info, H2Canister>,
-    eac: &mut Account<'info, EAC>,
     token_mint: &Account<'info, Mint>,
     producer_ata: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
     authority: &Signer<'info>,
     minted_grams: u64,
 ) -> Result<()> {
-    require!(
-        eac.available_hydrogen >= minted_grams,
-        CustomError::NotEnoughToProduceHydrogen
-    );
+    // require!(
+    //     eac.available_hydrogen >= minted_grams,
+    //     CustomError::NotEnoughToProduceHydrogen
+    // );
 
-    // Mint H2 tokens
+    // mint H2 tokens
     mint_to(
         CpiContext::new(
             token_program.to_account_info(),
@@ -48,26 +47,26 @@ pub fn mint_h2<'info>(
 //     mint_h2(&mut ctx.accounts.h2_canister, , , burned_kwh, minted_grams)
 // }
 
-#[derive(Accounts)]
-pub struct MintH2<'info> {
-    #[account(mut, seeds = [b"h2_canister", producer.key().as_ref()], bump)]
-    pub h2_canister: Account<'info, H2Canister>,
+// #[derive(Accounts)]
+// pub struct MintH2<'info> {
+//     #[account(mut, seeds = [b"h2_canister", producer.key().as_ref()], bump)]
+//     pub h2_canister: Account<'info, H2Canister>,
 
-    pub producer: Account<'info, Producer>,
+//     pub producer: Account<'info, Producer>,
 
-    #[account(mut)]
-    pub authority: Signer<'info>,
-    #[account(mut)]
-    pub token_mint: Account<'info, Mint>,
-    #[account(
-            mut,
-            associated_token::mint = token_mint,
-            associated_token::authority = authority,
-        )]
-    pub producer_ata: Account<'info, TokenAccount>,
-    pub token_program: Program<'info, Token>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program: Program<'info, System>,
-    /// CHECK: Validated as the program ID for CPI
-    pub program: AccountInfo<'info>,
-}
+//     #[account(mut)]
+//     pub authority: Signer<'info>,
+//     #[account(mut)]
+//     pub token_mint: Account<'info, Mint>,
+//     #[account(
+//             mut,
+//             associated_token::mint = token_mint,
+//             associated_token::authority = authority,
+//         )]
+//     pub producer_ata: Account<'info, TokenAccount>,
+//     pub token_program: Program<'info, Token>,
+//     pub associated_token_program: Program<'info, AssociatedToken>,
+//     pub system_program: Program<'info, System>,
+//     /// CHECK: Validated as the program ID for CPI
+//     pub program: AccountInfo<'info>,
+// }

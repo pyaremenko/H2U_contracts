@@ -17,8 +17,6 @@ pub fn subtract_kilowatts_eac(ctx: Context<SubtractKilowattsEac>, burned_kwh: u6
     let minted_grams = (burned_kwh * GRAMS_PER_KG) / ELECTRICITY_PER_KG_H2;
 
     eac.available_kwts = eac.available_kwts.checked_sub(burned_kwh).unwrap();
-    eac.available_hydrogen = eac.available_hydrogen.checked_add(minted_grams).unwrap();
-
     Ok(())
 }
 

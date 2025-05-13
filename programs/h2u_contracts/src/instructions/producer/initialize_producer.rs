@@ -1,6 +1,5 @@
-use anchor_lang::prelude::*;
-
 use crate::{errors::producer::producer_errors::ErrorCode, state::producer::Producer};
+use anchor_lang::prelude::*;
 
 pub fn init_producer(ctx: Context<InitProducer>, id: u64, name: String) -> Result<()> {
     let producer = &mut ctx.accounts.producer;
@@ -11,6 +10,8 @@ pub fn init_producer(ctx: Context<InitProducer>, id: u64, name: String) -> Resul
     msg!("Name length: {}", name.len());
     producer.name = name;
     producer.authority = ctx.accounts.authority.key();
+    // Create token mint if not initialized
+
     Ok(())
 }
 

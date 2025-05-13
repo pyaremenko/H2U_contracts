@@ -6,7 +6,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("GeFoFS8vqoYQwcoRqLDxeg4TqEFxf3vMCGHMPV8u9rr5");
+declare_id!("53gF64GULwxev9mEbEL5MGbo6tJjtdtJ4U9mFb2otJQh");
 
 #[program]
 pub mod hydrogen {
@@ -20,8 +20,15 @@ pub mod hydrogen {
         update_producer(ctx, name)
     }
 
-    pub fn initialize_eac_storage(ctx: Context<InitEacStorage>) -> Result<()> {
-        init_eac_storage(ctx)
+    pub fn initialize_eac_storage(
+        ctx: Context<InitEacStorage>,
+        token_name: String,
+
+        token_symbol: String,
+        token_uri: String,
+        total_amount: u64,
+    ) -> Result<()> {
+        init_eac_storage(ctx, token_name, token_symbol, token_uri, total_amount)
     }
 
     pub fn add_kilowatts_to_eac(ctx: Context<AddKilowattsEac>, amount: u64) -> Result<()> {
@@ -35,8 +42,13 @@ pub mod hydrogen {
         subtract_kilowatts_eac(ctx, amount)
     }
 
-    pub fn initialize_h2_canister(ctx: Context<InitH2Canister>) -> Result<()> {
-        init_h2_canister(ctx)
+    pub fn initialize_h2_canister(
+        ctx: Context<InitH2Canister>,
+        token_name: String,
+        token_symbol: String,
+        token_uri: String,
+    ) -> Result<()> {
+        init_h2_canister(ctx, token_name, token_symbol, token_uri)
     }
 
     // pub fn burn_eac_certificate(ctx: Context<BurnEac>, burned_kwh: u64) -> Result<()> {
@@ -47,14 +59,8 @@ pub mod hydrogen {
     //     mint_h2_context(ctx, minted_tons)
     // }
 
-    pub fn producer_register_batch(
-        ctx: Context<RegisterProduce>,
-        burned_kwh: u64,
-        token_name: String,
-        token_symbol: String,
-        token_uri: String,
-    ) -> Result<()> {
-        register_produce(ctx, burned_kwh, token_name, token_symbol, token_uri)
+    pub fn producer_register_batch(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
+        register_produce(ctx, burned_kwh)
     }
 
     // pub fn producer_register_batch(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
