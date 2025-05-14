@@ -17,8 +17,6 @@ pub fn init_h2_canister(
     token_symbol: String,
     token_uri: String,
 ) -> Result<()> {
-    let signer = &ctx.accounts.signer;
-
     create_metadata_accounts_v3(
         CpiContext::new(
             ctx.accounts.token_metadata_program.to_account_info(),

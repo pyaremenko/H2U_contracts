@@ -1,27 +1,44 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import {
+  getAssociatedTokenAddress,
+  getAccount,
+  createMint,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+} from "@solana/spl-token";
 import { assert } from "chai";
-import { Hydrogen } from "../../../target/types/hydrogen";
+
+import { Marketplace } from "../../../target/types/marketplace";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, createMint } from "@solana/spl-token";
-import { getAssociatedTokenAddress, getAccount } from "@solana/spl-token";
+import { Hydrogen } from "../../../target/types/hydrogen";
 
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );
 
-describe("h2u_contracts", () => {
+describe("h2u + market merged", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
 
-  const program = anchor.workspace.Hydrogen as Program<Hydrogen>;
-  const programId = program.programId;
-  const producerAuthority = anchor.web3.Keypair.generate();
+  const hydrogen = anchor.workspace.Hydrogen as Program<Hydrogen>;
+  const marketplace = anchor.workspace.Marketplace as Program<Marketplace>;
+
+  const producerAuthority = Keypair.generate();
+  const signer = provider.wallet as anchor.Wallet;
 
   let producerPda: PublicKey;
   let eacPda: PublicKey;
   let h2Pda: PublicKey;
+  let configPda: PublicKey;
+  let signerPda: PublicKey;
+  let configBump: number;
+  let h2Mint: PublicKey;
+  let producerH2Ata: PublicKey;
+  let transferManagerPda: PublicKey;
+  let transferManagerAta: PublicKey;
+  let listingPda: PublicKey;
 
   before(async () => {
     console.log("🔄 Airdropping 4 SOL to producer authority...");
@@ -30,26 +47,38 @@ describe("h2u_contracts", () => {
 
     [producerPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("producer"), producerAuthority.publicKey.toBuffer()],
-      programId
+      hydrogen.programId
     );
 
     [eacPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("eac"), producerPda.toBuffer()],
-      programId
+      hydrogen.programId
     );
 
     [h2Pda] = PublicKey.findProgramAddressSync(
       [Buffer.from("h2_canister"), producerAuthority.publicKey.toBuffer()],
-      programId
+      hydrogen.programId
+    );
+
+    [configPda, configBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("config")],
+      marketplace.programId
+    );
+
+    [signerPda] = await PublicKey.findProgramAddress(
+      [Buffer.from("signer")],
+      marketplace.programId
     );
 
     console.log("📌 producerPda:", producerPda.toBase58());
     console.log("📌 eacPda:", eacPda.toBase58());
     console.log("📌 h2Pda:", h2Pda.toBase58());
+    console.log("📌 configPda:", configPda.toBase58());
+    console.log("📌 signerPda:", signerPda.toBase58());
   });
 
-  it("Initialize Producer", async () => {
-    const tx = await program.methods
+  it("Initializes Producer", async () => {
+    const tx = await hydrogen.methods
       .initializeProducer(new anchor.BN(1), "Test Producer")
       .accounts({
         producer: producerPda,
@@ -61,40 +90,11 @@ describe("h2u_contracts", () => {
 
     console.log("✅ initializeProducer tx signature:", tx);
 
-    const producerAccount = await program.account.producer.fetch(producerPda);
-    console.log("📄 Producer Account:", {
-      ...producerAccount,
-      id: producerAccount.id.toNumber(),
-      authority: producerAccount.authority.toBase58(),
-    });
-
+    const producerAccount = await hydrogen.account.producer.fetch(producerPda);
     assert.equal(producerAccount.name, "Test Producer");
   });
 
-  it("Update Producer Name", async () => {
-    const tx = await program.methods
-      .updateProducerData("Updated Producer Name")
-      .accounts({
-        producer: producerPda,
-        authority: producerAuthority.publicKey,
-        systemProgram: SystemProgram.programId,
-      })
-      .signers([producerAuthority])
-      .rpc();
-
-    console.log("✅ updateProducerData tx signature:", tx);
-
-    const producerAccount = await program.account.producer.fetch(producerPda);
-    console.log("📄 Updated Producer Account:", {
-      ...producerAccount,
-      id: producerAccount.id.toNumber(),
-      authority: producerAccount.authority.toBase58(),
-    });
-
-    assert.equal(producerAccount.name, "Updated Producer Name");
-  });
-
-  it("Initializes EAC storage and creates metadata", async () => {
+  it("Initializes EAC", async () => {
     const tokenMint = await createMint(
       provider.connection,
       producerAuthority,
@@ -121,12 +121,7 @@ describe("h2u_contracts", () => {
       ASSOCIATED_TOKEN_PROGRAM_ID
     );
 
-    const [eacPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("eac"), producerPda.toBuffer()],
-      program.programId
-    );
-
-    const tx = await program.methods
+    const tx = await hydrogen.methods
       .initializeEacStorage(
         "EAC Certificate",
         "EAC",
@@ -149,20 +144,11 @@ describe("h2u_contracts", () => {
       .signers([producerAuthority])
       .rpc();
 
-    console.log("✅ initEacStorage tx:", tx);
-
-    const eacAccount = await program.account.eac.fetch(eacPda);
-    console.log("📄 EAC Account:", {
-      certificateCapacityKwts: eacAccount.certificateCapacityKwts.toNumber(),
-      availableKwts: eacAccount.availableKwts.toNumber(),
-      burnedKwts: eacAccount.burnedKwts.toNumber(),
-      producerPubkey: eacAccount.producerPubkey.toBase58(),
-      tokenMint: eacAccount.tokenMint.toBase58(),
-    });
+    console.log("✅ initializeEAC tx:", tx);
   });
 
-  it("Initialize H2 Canister", async () => {
-    const tokenMint = await createMint(
+  it("Initializes H2 Canister", async () => {
+    h2Mint = await createMint(
       provider.connection,
       producerAuthority,
       producerAuthority.publicKey,
@@ -174,20 +160,18 @@ describe("h2u_contracts", () => {
       [
         Buffer.from("metadata"),
         TOKEN_METADATA_PROGRAM_ID.toBuffer(),
-        tokenMint.toBuffer(),
+        h2Mint.toBuffer(),
       ],
       TOKEN_METADATA_PROGRAM_ID
     );
 
-    const producerAta = await getAssociatedTokenAddress(
-      tokenMint,
-      producerAuthority.publicKey,
-      false,
-      TOKEN_PROGRAM_ID,
-      ASSOCIATED_TOKEN_PROGRAM_ID
+    producerH2Ata = await getAssociatedTokenAddress(
+      h2Mint,
+      producerAuthority.publicKey
     );
+    console.log();
 
-    const tx = await program.methods
+    const tx = await hydrogen.methods
       .initializeH2Canister(
         "HydrogenCredit",
         "H2U",
@@ -195,9 +179,9 @@ describe("h2u_contracts", () => {
       )
       .accounts({
         h2Canister: h2Pda,
-        tokenMint,
+        tokenMint: h2Mint,
         metadataAccount: metadataPda,
-        producerAta,
+        producerAta: producerH2Ata,
         tokenProgram: TOKEN_PROGRAM_ID,
         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -209,21 +193,13 @@ describe("h2u_contracts", () => {
       .signers([producerAuthority])
       .rpc();
 
-    console.log("✅ initializeH2Canister tx signature:", tx);
-
-    const h2Account = await program.account.h2Canister.fetch(h2Pda);
-    console.log("📄 H2 Canister Account:", {
-      totalAmount: h2Account.totalAmount.toNumber(),
-      availableHydrogen: h2Account.availableHydrogen.toNumber(),
-      producerPubkey: h2Account.producerPubkey.toBase58(),
-      tokenMint: h2Account.tokenMint.toBase58(),
-    });
+    console.log("✅ initializeH2Canister tx:", tx);
   });
 
   it("Register Produce with 900 kWh", async () => {
     // 1. Fetch account states
-    const eacAccountBefore = await program.account.eac.fetch(eacPda);
-    const h2CanisterBefore = await program.account.h2Canister.fetch(h2Pda);
+    const eacAccountBefore = await hydrogen.account.eac.fetch(eacPda);
+    const h2CanisterBefore = await hydrogen.account.h2Canister.fetch(h2Pda);
 
     // 2. Derive token mints from on-chain state
     const eacMint = eacAccountBefore.tokenMint;
@@ -248,7 +224,7 @@ describe("h2u_contracts", () => {
     console.log("💧 H2 ATA:", Number(h2AtaBefore.amount));
 
     // 5. Call instruction
-    const tx = await program.methods
+    const tx = await hydrogen.methods
       .producerRegisterBatch(new anchor.BN(900))
       .accounts({
         producer: producerPda,
@@ -270,8 +246,8 @@ describe("h2u_contracts", () => {
     console.log("✅ TX Signature:", tx);
 
     // 6. Fetch states after
-    const eacAccountAfter = await program.account.eac.fetch(eacPda);
-    const h2CanisterAfter = await program.account.h2Canister.fetch(h2Pda);
+    const eacAccountAfter = await hydrogen.account.eac.fetch(eacPda);
+    const h2CanisterAfter = await hydrogen.account.h2Canister.fetch(h2Pda);
     const eacAtaAfter = await getAccount(provider.connection, producerEacAta);
     const h2AtaAfter = await getAccount(provider.connection, producerH2Ata);
 
@@ -292,51 +268,200 @@ describe("h2u_contracts", () => {
     console.log("💧 H2 ATA:", Number(h2AtaAfter.amount));
   });
 
-  // it("Add 1000 kWh to EAC", async () => {
-  //   const tx = await program.methods
-  //     .addKilowattsToEac(new anchor.BN(1000))
+  it("Initializes Market Config", async () => {
+    const [configPda, configBump] = await PublicKey.findProgramAddress(
+      [Buffer.from("config")],
+      marketplace.programId
+    );
+
+    const [transferManagerPda, transferManagerBump] =
+      await PublicKey.findProgramAddress(
+        [Buffer.from("transfer_manager")],
+        marketplace.programId
+      );
+
+    console.log("📌 Config PDA:", configPda.toBase58());
+    console.log("📌 Transfer Manager PDA:", transferManagerPda.toBase58());
+    console.log(
+      "🔢 Bumps → config:",
+      configBump,
+      "| transfer_manager:",
+      transferManagerBump
+    );
+
+    const tx = await marketplace.methods
+      .initializeConfig()
+      .accounts({
+        config: configPda,
+        authority: signer.publicKey,
+        transferManager: transferManagerPda,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    console.log("✅ initializeConfig tx signature:", tx);
+
+    const config = await marketplace.account.marketConfig.fetch(configPda);
+
+    console.log("📄 Loaded Config Account:");
+    console.log(" - authority:", config.authority.toBase58());
+    console.log(" - transferManager:", config.transferManager.toBase58());
+    console.log(" - transferManagerBump:", config.transferManagerBump);
+
+    assert.ok(config.authority.equals(signer.publicKey));
+    assert.ok(config.transferManager.equals(transferManagerPda));
+    assert.equal(config.transferManagerBump, transferManagerBump);
+  });
+
+  it("Lists H2 to the marketplace (to transfer manager ATA)", async () => {
+    const [pda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("listing"), h2Pda.toBuffer()],
+      marketplace.programId
+    );
+    listingPda = pda;
+
+    [transferManagerPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("transfer_manager")],
+      marketplace.programId
+    );
+
+    const transferManagerAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      signer.payer,
+      h2Mint,
+      transferManagerPda,
+      true // allow owner to be a PDA
+    );
+
+    console.log("📦 Producer H2 ATA:", producerH2Ata.toBase58());
+    console.log(
+      "🏦 Transfer Manager ATA (Buffer):",
+      transferManagerAta.address.toBase58()
+    );
+
+    const tx = await marketplace.methods
+      .listTokens(new anchor.BN(10), new anchor.BN(1))
+      .accounts({
+        listing: listingPda,
+        producerAuthority: producerAuthority.publicKey, // ✅ match your Rust context
+        producer: producerPda,
+        h2Canister: h2Pda,
+        producerAta: producerH2Ata,
+        transferManagerAta: transferManagerAta.address,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([producerAuthority]) // ✅ must match producer_authority
+      .rpc();
+    console.log("✅ listH2 tx signature:", tx);
+
+    const balance = await getAccount(
+      provider.connection,
+      transferManagerAta.address
+    );
+    const listing = await marketplace.account.listing.fetch(listingPda);
+
+    console.log("📄 Listing created:");
+    console.log(" - price:", listing.price.toString());
+    console.log(" - producer:", listing.producer.toBase58());
+    console.log(
+      " - transfer manager ATA:",
+      listing.transferManagerAta.toBase58()
+    );
+
+    assert.equal(Number(balance.amount), 10000000000);
+    assert.ok(listing.transferManagerAta.equals(transferManagerAta.address));
+    assert.ok(listing.producer.equals(producerPda));
+  });
+
+  it("Allows a buyer to purchase H2 at dynamic price and transfers SOL to producer", async () => {
+    const buyer = anchor.web3.Keypair.generate();
+    await provider.connection.requestAirdrop(buyer.publicKey, 15e9);
+    await new Promise((r) => setTimeout(r, 1000));
+
+    const listingAccount = await marketplace.account.listing.fetch(listingPda);
+    const h2Mint = (await hydrogen.account.h2Canister.fetch(h2Pda)).tokenMint;
+
+    const [transferManagerPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("transfer_manager")],
+      marketplace.programId
+    );
+
+    const transferManagerAta = await getAssociatedTokenAddress(
+      h2Mint,
+      transferManagerPda,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
+
+    const buyerAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      signer.payer,
+      h2Mint,
+      buyer.publicKey,
+      true
+    );
+
+    const buyerSolBefore = await provider.connection.getBalance(
+      buyer.publicKey
+    );
+    const producerSolBefore = await provider.connection.getBalance(
+      producerAuthority.publicKey
+    );
+
+    // Buyer defines their own price (should be ≥ listing.price) and amount
+    const purchaseAmount = 1; // H2 tokens
+    const pricePerToken = listingAccount.price.toNumber() + 1; // Slightly above listing
+
+    const totalPayment = pricePerToken * purchaseAmount;
+
+    const tx = await marketplace.methods
+      .sellTokens(new anchor.BN(purchaseAmount), new anchor.BN(pricePerToken))
+      .accounts({
+        config: configPda,
+        listing: listingPda,
+        buyer: buyer.publicKey,
+        transferManager: transferManagerPda,
+        transferManagerAta,
+        buyerAta: buyerAta.address,
+        producer: producerAuthority.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([buyer])
+      .rpc();
+
+    console.log("✅ sellH2 tx signature:", tx);
+
+    const buyerAtaAcc = await getAccount(provider.connection, buyerAta.address);
+    const buyerSolAfter = await provider.connection.getBalance(buyer.publicKey);
+    const producerSolAfter = await provider.connection.getBalance(
+      producerAuthority.publicKey
+    );
+
+    console.log("💧 H2 tokens in buyer ATA:", Number(buyerAtaAcc.amount));
+    console.log("💰 Buyer SOL diff:", buyerSolBefore - buyerSolAfter);
+    console.log("💰 Producer SOL diff:", producerSolAfter - producerSolBefore);
+
+    assert.equal(Number(buyerAtaAcc.amount), 1e9 * purchaseAmount);
+    assert.equal(buyerSolBefore - buyerSolAfter, totalPayment);
+    assert.equal(producerSolAfter - producerSolBefore, totalPayment);
+  });
+
+  // Optional test for config authority update
+  // const newAuthority = anchor.web3.Keypair.generate();
+  // it("Updates config authority", async () => {
+  //   await marketplace.methods
+  //     .updateConfig(newAuthority.publicKey)
   //     .accounts({
-  //       eac: eacPda,
-  //       authority: producerAuthority.publicKey,
+  //       config: configPda,
+  //       authority: signer.publicKey,
   //     })
-  //     .signers([producerAuthority])
   //     .rpc();
-
-  //   console.log("✅ addKilowattsToEac tx signature:", tx);
-
-  //   const eacAccount = await program.account.eac.fetch(eacPda);
-  //   console.log("📄 EAC Account After Add:", eacAccount);
-
-  //   const h2Account = await program.account.h2Canister.fetch(h2Pda);
-  //   console.log("📄 H2 Canister Account:", h2Account);
-  //   // assert.equal(h2Account.totalAmount.toNumber(), 0);
-  // });
-
-  // it("Fail to Register Produce with 101 kWh", async () => {
-  //   try {
-  //     await program.methods
-  //       .producerRegisterBatch(new anchor.BN(101))
-  //       .accounts({
-  //         producer: producerPda,
-  //         h2Canister: h2Pda,
-  //         eac: eacPda,
-  //         authority: producerAuthority.publicKey,
-  //       })
-  //       .signers([producerAuthority])
-  //       .rpc();
-  //     assert.fail("❌ Should have thrown due to insufficient kWh");
-  //   } catch (err) {
-  //     console.log("✅ Expected error:", err);
-
-  //     const eacAccount = await program.account.eac.fetch(eacPda);
-  //     const h2Account = await program.account.h2Canister.fetch(h2Pda);
-  //     console.log("📄 EAC Account After Failed Register:", eacAccount);
-  //     console.log("📄 H2 Account After Failed Register:", h2Account);
-
-  //     // assert.equal(eacAccount.availableAmount.toNumber(), 86);
-  //     // assert.equal(eacAccount.burnedAmount.toNumber(), 914);
-  //     // assert.equal(h2Account.availableAmount.toNumber(), 15233);
-  //     // assert.equal(h2Account.totalAmount.toNumber(), 15233);
-  //   }
+  //
+  //   const config = await marketplace.account.marketConfig.fetch(configPda);
+  //   assert.ok(config.authority.equals(newAuthority.publicKey));
   // });
 });

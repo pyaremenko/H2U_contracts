@@ -6,6 +6,7 @@ skip-lint = false
 
 [programs.localnet]
 hydrogen = "53gF64GULwxev9mEbEL5MGbo6tJjtdtJ4U9mFb2otJQh"
+marketplace = "DV8SDKNi9UwidDngAokreg39qUqFYA8FLUNpYKzyE7UJ"
 
 [registry]
 url = "https://api.apr.dev"
