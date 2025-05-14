@@ -13,6 +13,7 @@ import { assert } from "chai";
 import { Marketplace } from "../../../target/types/marketplace";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import { Hydrogen } from "../../../target/types/hydrogen";
+import { Oracle } from "../../../target/types/oracle";
 
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
@@ -24,6 +25,7 @@ describe("h2u + market merged", () => {
 
   const hydrogen = anchor.workspace.Hydrogen as Program<Hydrogen>;
   const marketplace = anchor.workspace.Marketplace as Program<Marketplace>;
+  const oracle = anchor.workspace.Oracle as Program<Oracle>;
 
   const producerAuthority = Keypair.generate();
   const signer = provider.wallet as anchor.Wallet;
@@ -449,7 +451,52 @@ describe("h2u + market merged", () => {
     assert.equal(buyerSolBefore - buyerSolAfter, totalPayment);
     assert.equal(producerSolAfter - producerSolBefore, totalPayment);
   });
+  it("Initializes config and updates price", async () => {
+    const [oracleConfigPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("oracle_config")],
+      oracle.programId
+    );
+    const [pricePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("oracle_price")],
+      oracle.programId
+    );
 
+    const admin = provider.wallet.publicKey;
+
+    // Initialize config
+    await oracle.methods
+      .initConfig()
+      .accounts({
+        oracleConfig: oracleConfigPda,
+        oraclePrice: pricePda,
+        authority: provider.wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([provider.wallet.payer])
+      .rpc();
+
+    // Update price
+    await oracle.methods
+      .updatePrice(new anchor.BN(150), new anchor.BN(300))
+      .accounts({
+        oracleConfig: oracleConfigPda,
+        oraclePrice: pricePda,
+        admin,
+      })
+      .signers([provider.wallet.payer])
+      .rpc();
+
+    const price = await oracle.account.oraclePrice.fetch(pricePda);
+
+    console.log("✅ Oracle price updated:", {
+      min: price.minPricePerKg.toNumber(),
+      max: price.maxPricePerKg.toNumber(),
+      updated: price.lastUpdated.toString(),
+    });
+
+    assert.equal(price.minPricePerKg.toNumber(), 150);
+    assert.equal(price.maxPricePerKg.toNumber(), 300);
+  });
   // Optional test for config authority update
   // const newAuthority = anchor.web3.Keypair.generate();
   // it("Updates config authority", async () => {
