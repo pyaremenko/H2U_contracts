@@ -14,7 +14,7 @@ use anchor_spl::{
 
 const ELECTRICITY_PER_KG_H2: u64 = 60; // 60 kWh to produce 1 kg H2
 
-pub fn register_produce(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Result<()> {
+pub fn register_produce(ctx: Context<RegisterProduce>, id: String, burned_kwh: u64) -> Result<()> {
     let minted_grams = (burned_kwh) / ELECTRICITY_PER_KG_H2;
 
     burn_eac(
@@ -39,11 +39,12 @@ pub fn register_produce(ctx: Context<RegisterProduce>, burned_kwh: u64) -> Resul
 }
 
 #[derive(Accounts)]
+#[instruction(id: String)]
 pub struct RegisterProduce<'info> {
     #[account(mut, seeds = [b"producer", authority.key().as_ref()], bump)]
     pub producer: Account<'info, Producer>,
 
-    #[account(mut, seeds = [b"h2_canister", authority.key().as_ref()], bump)]
+    #[account(mut, seeds = [b"h2_canister", authority.key().as_ref(),id.as_ref() ], bump)]
     pub h2_canister: Account<'info, H2Canister>,
 
     #[account(mut)]

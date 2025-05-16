@@ -1,6 +1,9 @@
 use anchor_lang::prelude::*;
 
-use crate::{state::h2_canister::h2_canister::H2Canister, state::producer::Producer};
+use crate::{
+    errors::h2_canister::CustomError,
+    state::{h2_canister::h2_canister::H2Canister, producer::Producer},
+};
 
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -13,6 +16,7 @@ use anchor_spl::{
 
 pub fn init_h2_canister(
     ctx: Context<InitH2Canister>,
+    id: String,
     token_name: String,
     token_symbol: String,
     token_uri: String,
@@ -52,6 +56,7 @@ pub fn init_h2_canister(
     // );
 
     let canister = &mut ctx.accounts.h2_canister;
+    canister.batch_id = id;
     canister.total_amount = 0;
     canister.available_hydrogen = 0;
     canister.producer_pubkey = ctx.accounts.producer.authority;
@@ -61,13 +66,15 @@ pub fn init_h2_canister(
 }
 
 #[derive(Accounts)]
+#[instruction(id: String)]
 pub struct InitH2Canister<'info> {
     #[account(
         init,
         payer = signer,
-        seeds = [b"h2_canister", producer.authority.as_ref()],
+        seeds = [b"h2_canister", producer.authority.as_ref(), id.as_ref()],
         bump,
-        space = 8 + 32 + 8 + 8 + 32
+        space = 8 + 32 + 8 + 8 + 32 + 4 + 36, // discriminator + total_amount + available_hydrogen + producer_pubkey + token_mint + batch_id (4 + 36)
+        constraint = id.len() <= 36 @ CustomError::BatchIdTooLong
     )]
     pub h2_canister: Account<'info, H2Canister>,
 

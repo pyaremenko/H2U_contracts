@@ -12,6 +12,7 @@ use crate::state::{eac::eac::EAC, producer::Producer};
 
 pub fn init_eac_storage(
     ctx: Context<InitEacStorage>,
+    id: String,
     token_name: String,
     token_symbol: String,
     token_uri: String,
@@ -67,11 +68,12 @@ pub fn init_eac_storage(
 }
 
 #[derive(Accounts)]
+#[instruction(id: String)]
 pub struct InitEacStorage<'info> {
     #[account(
         init,
         payer = signer,
-        seeds = [b"eac", producer.key().as_ref()],
+        seeds = [b"eac", producer.key().as_ref(), id.as_ref()],
         bump,
         space = EAC::MAXLEN
     )]

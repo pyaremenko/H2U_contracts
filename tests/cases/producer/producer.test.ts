@@ -53,12 +53,16 @@ describe("h2u + market merged", () => {
     );
 
     [eacPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("eac"), producerPda.toBuffer()],
+      [Buffer.from("eac"), producerPda.toBuffer(), Buffer.from("chlen")],
       hydrogen.programId
     );
 
     [h2Pda] = PublicKey.findProgramAddressSync(
-      [Buffer.from("h2_canister"), producerAuthority.publicKey.toBuffer()],
+      [
+        Buffer.from("h2_canister"),
+        producerAuthority.publicKey.toBuffer(),
+        Buffer.from("chlen"),
+      ],
       hydrogen.programId
     );
 
@@ -125,6 +129,7 @@ describe("h2u + market merged", () => {
 
     const tx = await hydrogen.methods
       .initializeEacStorage(
+        "chlen",
         "EAC Certificate",
         "EAC",
         "https://example.com/metadata.json",
@@ -175,6 +180,7 @@ describe("h2u + market merged", () => {
 
     const tx = await hydrogen.methods
       .initializeH2Canister(
+        "chlen",
         "HydrogenCredit",
         "H2U",
         "https://example.com/metadata.json"
@@ -227,7 +233,7 @@ describe("h2u + market merged", () => {
 
     // 5. Call instruction
     const tx = await hydrogen.methods
-      .producerRegisterBatch(new anchor.BN(900))
+      .producerRegisterBatch("chlen", new anchor.BN(900))
       .accounts({
         producer: producerPda,
         h2Canister: h2Pda,
