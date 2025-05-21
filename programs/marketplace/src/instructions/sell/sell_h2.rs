@@ -24,15 +24,30 @@ pub fn sell_h2(ctx: Context<SellH2>, amount: u64, offered_price: u64) -> Result<
         .ok_or(ErrorCode::MathOverflow)?;
 
     // Transfer SOL from buyer to producer
-    system_program::transfer(
+    // system_program::transfer(
+    //     CpiContext::new(
+    //         ctx.accounts.system_program.to_account_info(),
+    //         system_program::Transfer {
+    //             from: ctx.accounts.buyer.to_account_info(),
+    //             to: ctx.accounts.producer.to_account_info(),
+    //         },
+    //     ),
+    //     total_payment,
+    // )?;
+
+    // Transfer USDC from buyer_usdc_ata to producer_usdc_ata
+    anchor_spl::token::transfer(
         CpiContext::new(
-            ctx.accounts.system_program.to_account_info(),
-            system_program::Transfer {
-                from: ctx.accounts.buyer.to_account_info(),
-                to: ctx.accounts.producer.to_account_info(),
+            ctx.accounts.token_program.to_account_info(),
+            Transfer {
+                from: ctx.accounts.buyer_usdc_ata.to_account_info(),
+                to: ctx.accounts.producer_usdc_ata.to_account_info(),
+                authority: ctx.accounts.buyer.to_account_info(),
             },
         ),
-        total_payment,
+        total_payment
+            .checked_mul(10u64.pow(6))
+            .ok_or(ErrorCode::MathOverflow)?, // USDC has 6 decimals
     )?;
 
     // Transfer `amount` H2 tokens from transfer_manager_ata to buyer_ata
@@ -92,6 +107,12 @@ pub struct SellH2<'info> {
     /// CHECK: Recipient of SOL (producer)
     #[account(mut)]
     pub producer: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub buyer_usdc_ata: Account<'info, TokenAccount>,
+
+    #[account(mut)]
+    pub producer_usdc_ata: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,

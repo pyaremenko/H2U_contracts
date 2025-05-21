@@ -6,7 +6,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("2Rz4N5iELxauv1jpNPvDauJQtWyF4HnzjLMfEAurrHCM");
+declare_id!("8QtBUojhqkPHiTGszGqy3SqExZBtnGcY49jn3auEMYey");
 
 #[program]
 pub mod hydrogen {

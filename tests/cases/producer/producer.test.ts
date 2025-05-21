@@ -7,6 +7,7 @@ import {
   createMint,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,
+  mintTo,
 } from "@solana/spl-token";
 import { assert } from "chai";
 
@@ -17,6 +18,10 @@ import { Oracle } from "../../../target/types/oracle";
 
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+);
+
+const realUsdcMint = new PublicKey(
+  "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU" // devnet 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
 );
 
 describe("h2u + market merged", () => {
@@ -388,6 +393,39 @@ describe("h2u + market merged", () => {
     await provider.connection.requestAirdrop(buyer.publicKey, 15e9);
     await new Promise((r) => setTimeout(r, 1000));
 
+    // Create a mock USDC mint
+    const mockUsdcMint = await createMint(
+      provider.connection,
+      signer.payer,
+      signer.publicKey, // Mint authority
+      null,
+      6 // 6 decimals, like USDC
+    );
+
+    const buyerUsdcAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      signer.payer,
+      mockUsdcMint,
+      buyer.publicKey
+    );
+
+    const producerUsdcAta = await getOrCreateAssociatedTokenAccount(
+      provider.connection,
+      signer.payer,
+      mockUsdcMint,
+      producerAuthority.publicKey
+    );
+
+    // Step 3: Mint mock USDC to the buyer's ATA
+    await mintTo(
+      provider.connection,
+      signer.payer,
+      mockUsdcMint,
+      buyerUsdcAta.address,
+      signer.publicKey, // Mint authority
+      100 * 10 ** 6 // 100 USDC in smallest units
+    );
+
     const listingAccount = await marketplace.account.listing.fetch(listingPda);
     const h2Mint = (await hydrogen.account.h2Canister.fetch(h2Pda)).tokenMint;
 
@@ -419,11 +457,22 @@ describe("h2u + market merged", () => {
       producerAuthority.publicKey
     );
 
+    // Step 4: Record balances before the transaction
+    const buyerUsdcBefore = await getAccount(
+      provider.connection,
+      buyerUsdcAta.address
+    );
+    const producerUsdcBefore = await getAccount(
+      provider.connection,
+      producerUsdcAta.address
+    );
+
     // Buyer defines their own price (should be ≥ listing.price) and amount
     const purchaseAmount = 1; // H2 tokens
     const pricePerToken = listingAccount.price.toNumber() + 1; // Slightly above listing
 
     const totalPayment = pricePerToken * purchaseAmount;
+    const totalPaymentInSmallestUnits = totalPayment * 10 ** 6; // 2_000_000
 
     const tx = await marketplace.methods
       .sellTokens(new anchor.BN(purchaseAmount), new anchor.BN(pricePerToken))
@@ -435,6 +484,8 @@ describe("h2u + market merged", () => {
         transferManagerAta,
         buyerAta: buyerAta.address,
         producer: producerAuthority.publicKey,
+        buyerUsdcAta: buyerUsdcAta.address,
+        producerUsdcAta: producerUsdcAta.address,
         tokenProgram: TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
@@ -453,10 +504,37 @@ describe("h2u + market merged", () => {
     console.log("💰 Buyer SOL diff:", buyerSolBefore - buyerSolAfter);
     console.log("💰 Producer SOL diff:", producerSolAfter - producerSolBefore);
 
+    const buyerUsdcAfter = await getAccount(
+      provider.connection,
+      buyerUsdcAta.address
+    );
+    const producerUsdcAfter = await getAccount(
+      provider.connection,
+      producerUsdcAta.address
+    );
+
+    console.log("💧 H2 tokens in buyer ATA:", Number(buyerAtaAcc.amount));
+    console.log("💵 Buyer USDC balance:", Number(buyerUsdcAfter.amount));
+    console.log("💵 Producer USDC balance:", Number(producerUsdcAfter.amount));
+
     assert.equal(Number(buyerAtaAcc.amount), 1e9 * purchaseAmount);
-    assert.equal(buyerSolBefore - buyerSolAfter, totalPayment);
-    assert.equal(producerSolAfter - producerSolBefore, totalPayment);
+
+    //assert.equal(buyerSolBefore - buyerSolAfter, totalPayment);
+    //assert.equal(producerSolAfter - producerSolBefore, totalPayment);
+
+    // Assert balance changes
+    assert.equal(
+      Number(buyerUsdcBefore.amount) - Number(buyerUsdcAfter.amount),
+      totalPaymentInSmallestUnits,
+      "Buyer's USDC balance should decrease by the total payment"
+    );
+    assert.equal(
+      Number(producerUsdcAfter.amount) - Number(producerUsdcBefore.amount),
+      totalPaymentInSmallestUnits,
+      "Producer's USDC balance should increase by the total payment"
+    );
   });
+
   it("Initializes config and updates price", async () => {
     const [oracleConfigPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("oracle_config")],

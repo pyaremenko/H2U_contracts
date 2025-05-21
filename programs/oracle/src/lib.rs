@@ -5,7 +5,7 @@ pub mod instructions;
 pub mod state;
 
 use instructions::*;
-declare_id!("5UzEvuF5ef1GDbbYy1ySYzWEF7Fi3G8yACSUnNRvvZWb");
+declare_id!("5eXrKzvXYjfyWAVgYjngphm6rF4LpFkHVUBDqWbzPMg3");
 
 #[program]
 pub mod oracle {

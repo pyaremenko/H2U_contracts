@@ -5,14 +5,14 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-hydrogen = "2Rz4N5iELxauv1jpNPvDauJQtWyF4HnzjLMfEAurrHCM"
-marketplace = "D71KM5MFFzpWs4ky1LAfAiNTtVWNGhTNB6MkM8pwiHRr"
-oracle = "5UzEvuF5ef1GDbbYy1ySYzWEF7Fi3G8yACSUnNRvvZWb"
+hydrogen = "8QtBUojhqkPHiTGszGqy3SqExZBtnGcY49jn3auEMYey"
+marketplace = "2tXBiHkHxsPFbh7RjJwxdZC2eFupBATaZ1GdE1ngadaM"
+oracle = "5eXrKzvXYjfyWAVgYjngphm6rF4LpFkHVUBDqWbzPMg3"
 
 [programs.devnet]
-hydrogen = "2Rz4N5iELxauv1jpNPvDauJQtWyF4HnzjLMfEAurrHCM"
-marketplace = "D71KM5MFFzpWs4ky1LAfAiNTtVWNGhTNB6MkM8pwiHRr"
-oracle = "5UzEvuF5ef1GDbbYy1ySYzWEF7Fi3G8yACSUnNRvvZWb"
+hydrogen = "8QtBUojhqkPHiTGszGqy3SqExZBtnGcY49jn3auEMYey"
+marketplace = "2tXBiHkHxsPFbh7RjJwxdZC2eFupBATaZ1GdE1ngadaM"
+oracle = "5eXrKzvXYjfyWAVgYjngphm6rF4LpFkHVUBDqWbzPMg3"
 
 [registry]
 url = "https://api.apr.dev"
