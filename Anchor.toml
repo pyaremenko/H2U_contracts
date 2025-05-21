@@ -5,14 +5,21 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-hydrogen = "53gF64GULwxev9mEbEL5MGbo6tJjtdtJ4U9mFb2otJQh"
+hydrogen = "8QtBUojhqkPHiTGszGqy3SqExZBtnGcY49jn3auEMYey"
+marketplace = "2tXBiHkHxsPFbh7RjJwxdZC2eFupBATaZ1GdE1ngadaM"
+oracle = "5eXrKzvXYjfyWAVgYjngphm6rF4LpFkHVUBDqWbzPMg3"
+
+[programs.devnet]
+hydrogen = "8QtBUojhqkPHiTGszGqy3SqExZBtnGcY49jn3auEMYey"
+marketplace = "2tXBiHkHxsPFbh7RjJwxdZC2eFupBATaZ1GdE1ngadaM"
+oracle = "5eXrKzvXYjfyWAVgYjngphm6rF4LpFkHVUBDqWbzPMg3"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
-wallet = "/Users/petroyaremenko/.config/solana/id.json"
+cluster = "Devnet"
+wallet = "/Users/volkovivan/.config/solana/id.json"
 
 [scripts]
 test = "yarn ts-mocha -p ./tsconfig.json -t 1000000 tests/**/pipeline.test.ts"

@@ -5,7 +5,7 @@ describe("Testing Pipeline", () => {
     // uncomment required test file
     const testFiles = [
       //tests
-      "h2/h2.test.ts",
+      // "marketplace/marketplace.test.ts",
       "producer/producer.test.ts",
     ];
 
